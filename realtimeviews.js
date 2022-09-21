@@ -81,13 +81,11 @@ class MuxRealtimeViews extends HTMLElement {
       <style>
           .realtime_container {
               display:inline-flex;
-              /*
               display: grid;
               justify-content: center;
               justify-items: center;
               grid-auto-flow: column;
               align-items: stretch;
-              */
               gap: 1em;
               --text-color: unset;
               font-size:1em;
@@ -114,11 +112,9 @@ class MuxRealtimeViews extends HTMLElement {
             }
 
             .pulseonce {
-              /*
               box-shadow: 0 0 0 0 rgba(0, 0, 0, 1);
               transform: scale(1);
               animation: pulse-black 2s 1;
-              */
             }
             .increase, .decrease {
               animation: toBlack ease 1s;
