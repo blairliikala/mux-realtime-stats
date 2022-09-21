@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Mux Player Code</title>
+    <script defer src="https://unpkg.com/@mux/mux-player"></script>
+    <script defer src="realtimeviews.js"></script>
+    <meta name="color-scheme" content="dark light">
+    <style>
+      .my_views {
+          font-size:1.5em;
+          font-weight: normal;
+      }
+    </style>
+  </head>
+
+  <body style="max-width:800px;margin:0 auto;padding:1em">
+
+    <mux-player
+      id="mux_test_player_1"
+      playback-id="DS00Spx1CV902MCtPj5WknGlR102V5HFkDe"
+      stream-type="on-demand"
+      title="My Demo Vid"
+    ></mux-player>
+
+    <h4>Using Parameters</h4>
+    <mux-realtime-views id="using_params" views viewers></mux-realtime-views>
+
+    <h4>Using Slots</h4>
+    <mux-realtime-views id="using_slots">
+        <div slot="views"><span data-views class="my_views">0</span> watching</div>
+        <div slot="viewers"><span data-viewers class="my_views">0</span> viewers</div>        
+    </mux-realtime-views>    
+
+    <script type="module">
+
+      async function updateRealtime(asset_id) {
+        const player = document.querySelector('#mux_test_player_1');
+
+        const params = new Proxy(new URLSearchParams(window.location.search), {
+          get: (searchParams, prop) => searchParams.get(prop),
+        });
+  
+        const asset_id = params.id || 'IY7ZpOFWUuj01IOuIaqe00TfKBx9qqu02mhHyH3ehR84vs';
+  
+        const res = await fetch(`https://blairliikala.com/ee_test/index.php/api/mux_id/${asset_id}`)
+        const asset = await res.json();
+
+        player.playbackId = playback_id;
+
+        const asset_id = document.querySelector('#thiScript').dataset.asset;
+        const scope = document.querySelector('#'+asset_id); // this JS runs for each entry.
+      
+        const realtimes = scope.querySelectorAll('mux-realtime-views');
+        realtimes.forEach( async (component) => {
+          const res = await fetch(`https://blairliikala.com/ee_test/index.php/api/mux_id/${asset_id}`)
+          const asset = await res.json();
+          
+          component.api = asset.realtime.views_url; 
+        })
+      }
+
+      updateRealtime();
+    </script>
+
+  </body>
+</html>
