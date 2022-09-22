@@ -5,31 +5,33 @@ class MuxRealtimeViews extends HTMLElement {
   #showViewers = true;
   #viewsName = 'Watching';
   #viewersName = 'Viewers';
-  #viewsdata; // Hold the Mux Realtime response.
+  #viewsdata = {}; // Hold the Mux Realtime response.
   #secondsAgo = 0; // Count up since last check.
   #errorCount = 0; // Count errors.
 
-  intervals = {};
-  divs = {};
+  #intervals = {};
+  #divs = {};
+  #slots = {};
 
   constructor() {
-    super();   
-    
+    super();
+
     window.addEventListener("offline", () => {
       console.log('offline');
-      clearInterval(this.intervals.realtime,this.intervals.clock);
+      clearInterval(this.#intervals.realtime);
+      clearInterval(this.#intervals.clock);
     });
-    
+
     window.addEventListener("online", () => {
-      this.intervals.realtime = setInterval( () => this.getRealTimeViews(), this.#pinginterval);
-      this.intervals.clock = setInterval( () => this.clock(), 1000);        
+      this.#intervals.realtime = setInterval( () => this.getRealTimeViews(), this.#pinginterval);
+      this.#intervals.clock = setInterval( () => this.clock(), 1000);
       console.log('online.');
-    });      
+    });
   }
 
   set api(value) {
     if (this.isURL(value)) {
-      this.setAttribute('api', value)  
+      this.setAttribute('api', value)
     } else {
       console.debug(`"${value}" is not a valid URL.`);
     }
@@ -58,9 +60,9 @@ class MuxRealtimeViews extends HTMLElement {
       return;
     }
     this.#pinginterval = value;
-    clearInterval(this.intervals.realtime);
+    clearInterval(this.#intervals.realtime);
     this.getRealTimeViews();
-    this.intervals.realtime = setInterval( () => this.getRealTimeViews(), this.#pinginterval);
+    this.#intervals.realtime = setInterval( () => this.getRealTimeViews(), this.#pinginterval);
   }
   get pinginterval() {
     return this.#pinginterval;
@@ -194,17 +196,17 @@ class MuxRealtimeViews extends HTMLElement {
     const shadow = this.attachShadow({ mode: 'open' })
     shadow.appendChild(html);
 
-    this.divs = {
+    this.#divs = {
       'root'        : this.shadowRoot?.querySelector('.realtime_container'),
       'views'       : this.shadowRoot?.querySelector('[data-views]'),
       'viewers'     : this.shadowRoot?.querySelector('[data-viewers]'),
       'elapsed'     : this.shadowRoot?.querySelector('[data-elapsed]'),
     }
-    this.slots = {
+    this.#slots = {
       'viewsSlot'   : this.shadowRoot?.querySelector('slot[name=views]'),
       'viewersSlot' : this.shadowRoot?.querySelector('slot[name=viewers]'),
     }
-    
+
     this.create();
   }
 
@@ -212,7 +214,7 @@ class MuxRealtimeViews extends HTMLElement {
       if (!this.shadowRoot) return;
 
       this.#api          = this.getAttribute('api');
-      this.#pinginterval = this.getAttribute('pinginterval') || 5000;
+      this.#pinginterval = Number(this.getAttribute('pinginterval')) || 5000;
       this.#showViews    = this.hasAttribute('views');
       this.#showViewers  = this.hasAttribute('viewers');
       this.#viewsName    = this.getAttribute('views-label') || 'Watching';
@@ -223,45 +225,45 @@ class MuxRealtimeViews extends HTMLElement {
           return;
       }
 
-      const views = this.divs.root.querySelector('[data-views]');
+      const views = this.#divs.root.querySelector('[data-views]');
       if (this.#showViews && !views) {
           const divViews = document.createElement('div');
           divViews.classList.add('view_container');
           divViews.innerHTML = `<span class="data" data-views>0</span><span class="title">${this.#viewsName}</span>`;
-          this.divs.root.appendChild(divViews);
-          this.divs.views = this.shadowRoot.querySelector('[data-views]');
+          this.#divs.root.appendChild(divViews);
+          this.#divs.views = this.shadowRoot.querySelector('[data-views]');
       }
       if (!this.#showViews && views) {
         views.parentElement.remove();
       }
 
-      const viewers = this.divs.root.querySelector('[data-viewers]');
+      const viewers = this.#divs.root.querySelector('[data-viewers]');
       if (this.#showViewers && !viewers) {
           const divViewers = document.createElement('div');
           divViewers.classList.add('view_container');
           divViewers.innerHTML = `<span class="data" data-viewers>0</span><span class="title">${this.#viewersName}</span>`;
-          this.divs.root.appendChild(divViewers);
-          this.divs.viewers = this.shadowRoot.querySelector('[data-viewers]');
-      } 
+          this.#divs.root.appendChild(divViewers);
+          this.#divs.viewers = this.shadowRoot.querySelector('[data-viewers]');
+      }
       if (!this.#showViewers && viewers) {
         viewers.parentElement.remove();
       }
 
 
       if (this.shadowRoot.querySelector('slot[name=views]')) {
-        this.slots.views = this.querySelector('[data-views]');
+        this.#slots.views = this.querySelector('[data-views]');
       }
       if (this.shadowRoot.querySelector('slot[name=viewers]')) {
-        this.slots.viewers = this.querySelector('[data-viewers]');
+        this.#slots.viewers = this.querySelector('[data-viewers]');
       }
 
       this.getRealTimeViews();
-      clearInterval(this.intervals.realtime);
-      this.intervals.realtime = setInterval( () => this.getRealTimeViews(), this.#pinginterval);
+      clearInterval(this.#intervals.realtime);
+      this.#intervals.realtime = setInterval( () => this.getRealTimeViews(), this.#pinginterval);
 
       this.clock();
-      clearInterval(this.intervals.clock);
-      this.intervals.clock = setInterval( () => this.clock(), 1000);
+      clearInterval(this.#intervals.clock);
+      this.#intervals.clock = setInterval( () => this.clock(), 1000);
   }
 
   async getRealTimeViews() {
@@ -289,10 +291,10 @@ class MuxRealtimeViews extends HTMLElement {
       let viewsPrev   = (viewsdata_previous.data) ? viewsdata_previous.data[0].views : 0;
       let viewersPrev = (viewsdata_previous.data) ? viewsdata_previous.data[0].viewers : 0;
 
-      if (this.divs.views)    this.updateDiv(views, viewsPrev, this.divs.views)
-      if (this.divs.viewers)  this.updateDiv(viewers, viewersPrev, this.divs.viewers)
-      if (this.slots.views)   this.updateDiv(views, viewsPrev, this.slots.views)
-      if (this.slots.viewers) this.updateDiv(viewers, viewersPrev, this.slots.viewers)
+      if (this.#divs.views)    this.updateDiv(views, viewsPrev, this.#divs.views)
+      if (this.#divs.viewers)  this.updateDiv(viewers, viewersPrev, this.#divs.viewers)
+      if (this.#slots.views)   this.updateDiv(views, viewsPrev, this.#slots.views)
+      if (this.#slots.viewers) this.updateDiv(viewers, viewersPrev, this.#slots.viewers)
 
   }
 
@@ -352,26 +354,26 @@ class MuxRealtimeViews extends HTMLElement {
   clock() {
     this.#secondsAgo++;
 
-    if (this.divs?.elapsed) {
-      this.divs.elapsed.innerHTML = this.#secondsAgo;
+    if (this.#divs?.elapsed) {
+      this.#divs.elapsed.innerHTML = this.#secondsAgo;
     }
   }
 
   isURL(string) {
-    try { 
-      return Boolean(new URL(string)); 
+    try {
+      return Boolean(new URL(string));
     }
-    catch(e){ 
-      return false; 
-    }      
+    catch(e){
+      return false;
+    }
   }
 
   connectedCallback() {
     this.init();
   }
   disconnectedCallback() {
-    clearInterval(this.intervals.realtime);
-    clearInterval(this.intervals.clock);
+    clearInterval(this.#intervals.realtime);
+    clearInterval(this.#intervals.clock);
   }
   static get observedAttributes () {
     return ['api', 'views', 'viewers', 'pinginterval', 'views-label', 'viewers-label'];
