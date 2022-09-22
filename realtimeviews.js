@@ -272,7 +272,7 @@ class MuxRealtimeViews extends HTMLElement {
         return;
       }
 
-      if ('online' in navigator && !navigator.online) {
+      if ('online' in navigator && !navigator.onLine) {
         return;
       }
 
@@ -327,7 +327,7 @@ class MuxRealtimeViews extends HTMLElement {
       if (!res.ok) {
         switch(true) {
           // Token may have expired.
-          case res.status === '403' :
+          case res.status === 403 :
             console.debug("Token may have expired.", res.statusText, res.status);
             this.dispatchEvent(new CustomEvent('error', { detail: { "message" :"Token may have expired.", "text" : res.statusText, "status" : res.status} }));
             this.#errorCount++;
