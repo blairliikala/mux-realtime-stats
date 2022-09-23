@@ -18,13 +18,11 @@ class MuxRealtimeViews extends HTMLElement {
 
     window.addEventListener("offline", () => {
       console.log('offline');
-      clearInterval(this.#intervals.realtime);
-      clearInterval(this.#intervals.clock);
+      this.stopUpdating();
     });
 
     window.addEventListener("online", () => {
-      this.#intervals.realtime = setInterval( () => this.getRealTimeViews(), this.#pinginterval);
-      this.#intervals.clock = setInterval( () => this.clock(), 1000);
+      this.startUpdating();
       console.log('online.');
     });
   }
@@ -60,9 +58,8 @@ class MuxRealtimeViews extends HTMLElement {
       return;
     }
     this.#pinginterval = value;
-    clearInterval(this.#intervals.realtime);
-    this.getRealTimeViews();
-    this.#intervals.realtime = setInterval( () => this.getRealTimeViews(), this.#pinginterval);
+    this.stopUpdating();
+    this.startUpdating();
   }
   get pinginterval() {
     return this.#pinginterval;
@@ -80,106 +77,101 @@ class MuxRealtimeViews extends HTMLElement {
   }
 
   css = `
-      <style>
-          .realtime_container {
-              display:inline-flex;
-              display: grid;
-              justify-content: center;
-              justify-items: center;
-              grid-auto-flow: column;
-              align-items: stretch;
-              gap: 1em;
-              --text-color: unset;
-              font-size:1em;
-            }
-            .view_container {
-              display: flex;
-              position: relative;
-              flex-direction: column;
-              justify-content: center;
-              text-align: center;
-              background:rgba(0,0,0,0);
-              padding: .5rem;
-              border-radius: 50%;
-              aspect-ratio: 1 / 1;
-            }
-            .title {
-              text-transform: uppercase;
-              opacity:.5;
-              font-size:.8rem;
-              margin-top:.3rem;
-            }
-            .data {
-              font-size: 1.5rem;
-            }
+    <style>
+      .realtime_container {
+          display:inline-flex;
+          gap: 1em;
+          --text-color: unset;
+          font-size:1em;
+        }
+        .view_container {
+          display: flex;
+          position: relative;
+          flex-direction: column;
+          justify-content: center;
+          text-align: center;
+          background:rgba(0,0,0,0);
+          padding: .5rem;
+          border-radius: 50%;
+          aspect-ratio: 1 / 1;
+        }
+        .title {
+          text-transform: uppercase;
+          opacity:.5;
+          font-size:.8rem;
+          margin-top:.3rem;
+        }
+        .data {
+          font-size: 1.5rem;
+        }
 
-            .pulseonce {
-              box-shadow: 0 0 0 0 rgba(0, 0, 0, 1);
-              transform: scale(1);
-              animation: pulse-black 2s 1;
-            }
-            .increase, .decrease {
-              animation: toBlack ease 1s;
-              animation-iteration-count: 1;
-              animation-fill-mode: forwards;
-              animation-delay: 1s;
-            }
-            .increase {
-              color:green;
-            }
-            .decrease {
-              color:red;
-            }
+        .pulseonce {
+          box-shadow: 0 0 0 0 rgba(0, 0, 0, 1);
+          transform: scale(1);
+          animation: pulse-black 2s 1;
+        }
+        .increase, .decrease {
+          animation: toBlack ease 1s;
+          animation-iteration-count: 1;
+          animation-fill-mode: forwards;
+          animation-delay: 1s;
+        }
+        .increase {
+          color:green;
+        }
+        .decrease {
+          color:red;
+        }
 
-            .increase:before, .decrease:before {
-              margin:0;
-              padding:0;
-              position:absolute;
-              left:.3rem;
-              top:.9rem;
-              animation: fadeOut ease 1s;
-              animation-iteration-count: 1;
-              animation-fill-mode: forwards;
-              animation-delay: 1s;
-            }
-            .increase:before {
-              content: '+';
-            }
-            .decrease:before {
-              content: '-';
-              /*transform: rotate(180deg);*/
-            }
+        .increase:before, .decrease:before {
+          margin:0;
+          padding:0;
+          position:absolute;
+          left:.3rem;
+          top:.9rem;
+          animation: fadeOut ease 1s;
+          animation-iteration-count: 1;
+          animation-fill-mode: forwards;
+          animation-delay: 1s;
+        }
+        .increase:before {
+          content: '+';
+        }
+        .decrease:before {
+          content: '-';
+          /*transform: rotate(180deg);*/
+        }
 
-            @keyframes pulse-black {
-              0% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.7);
-              }
-              70% {
-                transform: scale(1);
-                box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
-              }
-              100% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
-              }
-            }
+        @keyframes pulse-black {
+          0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.7);
+          }
+          70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
+          }
+          100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+          }
+        }
 
-            @keyframes fadeOut {
-              0% {
-                opacity: 1;
-              }
-              100% {
-                opacity: 0;
-              }
-            }
-            @keyframes toBlack {
-              0% {}
-              100% {
-                color: var(--text-color);
-              }
-            }
-      </style>`
+        @keyframes fadeOut {
+          0% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+          }
+        }
+        @keyframes toBlack {
+          0% {}
+          100% {
+            color: var(--text-color);
+          }
+        }
+    </style>`;
 
   init() {
     const template = document.createElement('template');
@@ -213,7 +205,7 @@ class MuxRealtimeViews extends HTMLElement {
   create() {
       if (!this.shadowRoot) return;
 
-      this.#api          = this.getAttribute('api');
+      this.#api          = this.getAttribute('api') || '';
       this.#pinginterval = Number(this.getAttribute('pinginterval')) || 5000;
       this.#showViews    = this.hasAttribute('views');
       this.#showViewers  = this.hasAttribute('viewers');
@@ -257,20 +249,14 @@ class MuxRealtimeViews extends HTMLElement {
         this.#slots.viewers = this.querySelector('[data-viewers]');
       }
 
-      this.getRealTimeViews();
-      clearInterval(this.#intervals.realtime);
-      this.#intervals.realtime = setInterval( () => this.getRealTimeViews(), this.#pinginterval);
-
-      this.clock();
-      clearInterval(this.#intervals.clock);
-      this.#intervals.clock = setInterval( () => this.clock(), 1000);
+      this.startUpdating();
   }
 
   async getRealTimeViews() {
       const viewsdata_previous = {...this.#viewsdata};
 
       if (this.#errorCount > 4) {
-        if (this.#errorCount === 10) console.debug("Too many errors, stopping.");
+        if (this.#errorCount === 10) console.debug('Too many errors, stopping.');
         return;
       }
 
@@ -331,7 +317,7 @@ class MuxRealtimeViews extends HTMLElement {
           // Token may have expired.
           case res.status === 403 :
             console.debug("Token may have expired.", res.statusText, res.status);
-            this.dispatchEvent(new CustomEvent('error', { detail: { "message" :"Token may have expired.", "text" : res.statusText, "status" : res.status} }));
+            this.dispatchEvent(new CustomEvent('tokenexpired', { detail: { "message" :"Token may have expired.", "text" : res.statusText, "status" : res.status} }));
             this.#errorCount++;
             return;
 
@@ -349,6 +335,18 @@ class MuxRealtimeViews extends HTMLElement {
       this.#errorCount++;
       return false;
     }
+  }
+
+  stopUpdating() {
+    clearInterval(this.#intervals.realtime);
+    clearInterval(this.#intervals.clock);
+  }
+
+  startUpdating() {
+    this.getRealTimeViews();
+    this.#intervals.realtime = setInterval(() => this.getRealTimeViews(), this.#pinginterval);
+    this.clock();
+    this.#intervals.clock = setInterval(() => this.clock(), 1000);
   }
 
   clock() {
@@ -372,8 +370,7 @@ class MuxRealtimeViews extends HTMLElement {
     this.init();
   }
   disconnectedCallback() {
-    clearInterval(this.#intervals.realtime);
-    clearInterval(this.#intervals.clock);
+    this.stopUpdating();
   }
   static get observedAttributes () {
     return ['api', 'views', 'viewers', 'pinginterval', 'views-label', 'viewers-label'];
