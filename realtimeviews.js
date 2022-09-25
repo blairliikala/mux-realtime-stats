@@ -1,13 +1,22 @@
 class MuxRealtimeViews extends HTMLElement {
-  #api = '';
+  #token = '';
+  #tokenExpiration = {
+    'seconds': 0,
+    'relative': '',
+  }
   #pinginterval = 5000;
   #showViews = true;
   #showViewers = true;
   #viewsName = 'Watching';
   #viewersName = 'Viewers';
   #viewsdata = {}; // Hold the Mux Realtime response.
-  #secondsAgo = 0; // Count up since last check.
   #errorCount = 0; // Count errors.
+
+  // Count up since last check.
+  #lastUpdate = {
+    'seconds': 0,
+    'relative': '',
+  };
 
   #intervals = {};
   #divs = {};
@@ -17,22 +26,22 @@ class MuxRealtimeViews extends HTMLElement {
     super();
 
     window.addEventListener("offline", () => {
-      console.log('offline');
       this.stopUpdating();
     });
 
     window.addEventListener("online", () => {
       this.startUpdating();
-      console.log('online.');
     });
   }
 
-  set api(value) {
-    if (this.isURL(value)) {
-      this.setAttribute('api', value)
-    } else {
-      console.debug(`"${value}" is not a valid URL.`);
-    }
+  set token(value) {
+    this.setAttribute('token', value)
+  }
+  get token() {
+    return this.#token;
+  }
+  get tokenExpiration() {
+    return this.#tokenExpiration;
   }
 
   // Views
@@ -53,8 +62,15 @@ class MuxRealtimeViews extends HTMLElement {
 
   // Ping
   set pinginterval(value) {
+    if (typeof(value) !== 'number') {
+      value = Number(value);
+      if (value === isNaN()) {
+        console.warn('Interval must be a number.')
+        return;
+      }
+    }
     if (value < 5000) {
-      console.log('Ping interval must be above 5,000 (5 seconds)');
+      console.warn('Error: Ping interval must be at or above 5000 (5 seconds)');
       return;
     }
     this.#pinginterval = value;
@@ -73,7 +89,7 @@ class MuxRealtimeViews extends HTMLElement {
     return this.#errorCount;
   }
   get lastUpdate() {
-    return this.#secondsAgo;
+    return this.#lastUpdate;
   }
 
   css = `
@@ -205,16 +221,17 @@ class MuxRealtimeViews extends HTMLElement {
   create() {
       if (!this.shadowRoot) return;
 
-      this.#api          = this.getAttribute('api') || '';
+      this.#token        = this.getAttribute('token') || '';
       this.#pinginterval = Number(this.getAttribute('pinginterval')) || 5000;
       this.#showViews    = this.hasAttribute('views');
       this.#showViewers  = this.hasAttribute('viewers');
       this.#viewsName    = this.getAttribute('views-label') || 'Watching';
       this.#viewersName  = this.getAttribute('viewers-label') || 'Viewers';
 
-      if (!this.#api || this.#api === '' || !this.isURL(this.#api)) {
-          console.debug('Please include the api="[url]" parameter.');
-          return;
+      if (!this.#token) {
+        console.warn('Please include a token');
+        this.event('error', 'Please include a token');
+        return;
       }
 
       const views = this.#divs.root.querySelector('[data-views]');
@@ -256,7 +273,7 @@ class MuxRealtimeViews extends HTMLElement {
       const viewsdata_previous = {...this.#viewsdata};
 
       if (this.#errorCount > 4) {
-        if (this.#errorCount === 10) console.debug('Too many errors, stopping.');
+        if (this.#errorCount === 10) console.warn('Too many errors, stopping.');
         return;
       }
 
@@ -264,13 +281,22 @@ class MuxRealtimeViews extends HTMLElement {
         return;
       }
 
-      const data = await this.getData(this.#api);
-      if (!data || 'error' in data) return;
+      const { isExpired, timeString } = this.checkJWTExpiration(this.#token);
+
+      if (isExpired) {
+        this.event('expired', `JWT Token expired ${timeString}. Please provide a new token.`);
+        this.stopUpdating();
+        return;
+      }
+
+      const url = this.getURL(this.#token);
+      const data = await this.getData(url);
+      if (!data || 'error' in data) this.event('error', data.error.messages[0], data);
 
       this.#viewsdata = data;
-      this.dispatchEvent(new CustomEvent('update', {detail: this.#viewsdata}));
+      this.event('update', this.#viewsdata);
       this.#errorCount = 0;
-      this.#secondsAgo = 0;
+      this.#lastUpdate.seconds = 0;
 
       let views       = (this.#viewsdata.data) ? this.#viewsdata.data[0].views : 0;
       let viewers     = (this.#viewsdata.data) ? this.#viewsdata.data[0].viewers : 0;
@@ -293,11 +319,11 @@ class MuxRealtimeViews extends HTMLElement {
 
       if (current > old) {
         div.classList.add('increase');
-        this.dispatchEvent(new CustomEvent('increase', {detail: this.#viewsdata}));
+        this.event('increase', 'Increase', {previous: old, current: current, data: this.#viewsdata.data})
       }
       if (current < old) {
         div.classList.add('decrease');
-        this.dispatchEvent(new CustomEvent('decrease', {detail: this.#viewsdata}));
+        this.event('decrease', 'Decrease', {previous: old, current: current, data: this.#viewsdata.data})
       }
 
       div.addEventListener('animationend', () => {
@@ -310,30 +336,23 @@ class MuxRealtimeViews extends HTMLElement {
   }
 
   async getData(link) {
-    try {
-      const res = await fetch(link);
-      if (!res.ok) {
-        switch(true) {
-          // Token may have expired.
-          case res.status === 403 :
-            console.debug("Token may have expired.", res.statusText, res.status);
-            this.dispatchEvent(new CustomEvent('tokenexpired', { detail: { "message" :"Token may have expired.", "text" : res.statusText, "status" : res.status} }));
-            this.#errorCount++;
-            return;
-
-          default:
-            console.debug("Error getting real-time stats.", res.statusText, res.status);
-            this.dispatchEvent(new CustomEvent('error', { detail: { "message" :"Unable to get data", "text" : res.statusText, "status" : res.status} }));
-            this.#errorCount++;
-            return;
+    if (!link) return;
+    const res = await fetch(link)
+      .then(response => {
+        if (response.ok) {
+          return response
+        } else {
+          this.event('error', 'Unable to get Data.', response);
+          this.#errorCount++;
         }
-      }
+      })
+      .catch(error => {
+        this.event('error', 'Unable to get Data.', error);
+        this.#errorCount++;
+        return false;
+      });
+    if (res) {
       return await res.json();
-    } catch(error) {
-      this.dispatchEvent(new CustomEvent('error', { detail: { "message" :"Unable to get data"}}));
-      console.debug(error);
-      this.#errorCount++;
-      return false;
     }
   }
 
@@ -350,11 +369,16 @@ class MuxRealtimeViews extends HTMLElement {
   }
 
   clock() {
-    this.#secondsAgo++;
+    this.#lastUpdate.seconds++;
+    let now = new Date();
 
-    if (this.#divs?.elapsed) {
-      this.#divs.elapsed.innerHTML = this.#secondsAgo;
-    }
+    let offset = now.setSeconds(now.getSeconds() - this.#lastUpdate.seconds);
+    this.#lastUpdate.relative = this.getRelativeTimeDistance(offset);
+
+    const { timeString, expiration } = this.checkJWTExpiration(this.#token);
+    this.#tokenExpiration.relative = timeString;
+    this.#tokenExpiration.time = new Date(expiration);
+    this.#tokenExpiration.seconds = Math.round((new Date(expiration) - new Date()) / 1000);
   }
 
   isURL(string) {
@@ -366,6 +390,53 @@ class MuxRealtimeViews extends HTMLElement {
     }
   }
 
+  checkJWTExpiration(token) {
+    const jwt = this.parseJwt(token);
+    const expiration = new Date(0).setUTCSeconds(jwt.exp);
+    const timeString = this.getRelativeTimeDistance(expiration);
+    const isExpired = expiration < new Date();
+    return { isExpired, timeString, expiration };
+  }
+
+  parseJwt (TOKEN) {
+    let jsonPayload = '';
+    try {
+      let base64Url = TOKEN.split('.')[1];
+      let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+    } catch (error) {
+      console.warn(`Token may not be a real token`, TOKEN);
+      return;
+    }
+    return JSON.parse(jsonPayload);
+  }
+
+  getRelativeTimeDistance(d1, d2 = new Date()) {
+    const units = {
+      year  : 24 * 60 * 60 * 1000 * 365,
+      month : 24 * 60 * 60 * 1000 * 365/12,
+      day   : 24 * 60 * 60 * 1000,
+      hour  : 60 * 60 * 1000,
+      minute: 60 * 1000,
+      second: 1000
+    }
+    const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
+    const elapsed = d1 - d2;
+    for (var u in units)
+      if (Math.abs(elapsed) > units[u] || u == 'second')
+        return rtf.format(Math.round(elapsed/units[u]),u)
+  }
+
+  event(name, details, object) {
+    this.dispatchEvent(new CustomEvent(name, {detail: {"message": details, "full": object}}));
+  }
+
+  getURL(token) {
+    return `https://stats.mux.com/counts?token=${this.#token}`;
+  }
+
   connectedCallback() {
     this.init();
   }
@@ -373,13 +444,21 @@ class MuxRealtimeViews extends HTMLElement {
     this.stopUpdating();
   }
   static get observedAttributes () {
-    return ['api', 'views', 'viewers', 'pinginterval', 'views-label', 'viewers-label'];
+    return [
+      'token',
+      'views',
+      'viewers',
+      'pinginterval',
+      'views-label',
+      'viewers-label',
+    ];
   }
   attributeChangedCallback (name, oldValue, newValue) {
-    if (name === 'api') {
-      this.#api = newValue;
+    if (name === 'token') {
+      this.#token = newValue;
       this.#errorCount = 0;
     }
+
     if (name === 'viewers') this.#showViewers = newValue;
     if (name === 'views') this.#showViews = newValue;
     if (name === 'pinginterval') this.#pinginterval = newValue;
