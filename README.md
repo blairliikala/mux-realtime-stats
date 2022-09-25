@@ -2,17 +2,29 @@
 
 Helper to display realtime views for assets and live streams using the Mux API.
 
-## Usage:
+## Usage
 
 ```html
-<mux-realtime-views 
-  api="${real_time_views}" 
+<mux-realtime-views
+  token="${real_time_views}"
   views
   viewers
-></mux-realtime-views> 
+></mux-realtime-views>
 ```
 
-## Parameters
+### Custom View Labels
+
+```html
+<mux-realtime-views
+  token="${real_time_views}"
+  views
+  viewers
+  viewers-label="Custom Viewers Title"
+  views-label="Custom View Title"
+></mux-realtime-views>
+```
+
+## Tag Parameters
 
 | Name | Description | Default |
 | - | - | - |
@@ -21,13 +33,16 @@ Helper to display realtime views for assets and live streams using the Mux API.
 | viewers | Show how many viewers with premade styles and animations. | undefined |
 | views-label | Label for Views, replaced "views" | Watching |
 | viewer-label | Label for Viewers, replaced "viewers" | Viewers |
-| pinginterval | How often to check for view data in miliseconds.  Min of 5 seconds. | 5000 |
+| refresh | How often to check for view data in miliseconds.  Min of 5 seconds. | 5000 |
+
+## Additional Parameters
+
+| Name | Description | Default |
+| - | - | - |
 | data | (Read-only Object) The current raw response from mux.com | |
 | errorcount | (Read-only Number) Get the number of fetching errors. Reset after a successful fetch | |
 | lastUpdate | (Read-only Object) Contains the `seconds` and `relative` time since the last update | |
 | tokenTimeleft | (Read-only Object) Contains the `seconds` `relative` and `date` time left before the token expires and a new token is required for getting updates. | |
-
-
 
 ## Customize using Slots
 

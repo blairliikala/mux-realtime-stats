@@ -1,11 +1,11 @@
-class MuxRealtimeViews extends HTMLElement {
+export class MuxRealtimeViews extends HTMLElement {
   #token = '';
   #tokenExpiration = {
     'seconds': 0,
     'relative': '',
     'time': {},
   }
-  #pinginterval = 5000;
+  #refresh = 5;
   #showViews = true;
   #showViewers = true;
   #viewsName = 'Watching';
@@ -53,6 +53,9 @@ class MuxRealtimeViews extends HTMLElement {
   get views() {
     return this.#viewsdata.data[0]?.views || 0;
   }
+  set viewsLabel(value) {
+    if (typeof(value) === 'string') this.setAttribute('views-label', value);
+  }
 
   // Viewers
   get viewers() {
@@ -61,9 +64,12 @@ class MuxRealtimeViews extends HTMLElement {
   set viewers(value) {
     value ? this.setAttribute('viewers', 'true') : this.removeAttribute('viewers');
   }
+  set viewersLabel(value) {
+    if (typeof(value) === 'string') this.setAttribute('viewers-label', value);
+  }
 
   // Ping
-  set pinginterval(value) {
+  set refresh(value) {
     if (typeof(value) !== 'number') {
       value = Number(value);
       if (isNaN(value)) {
@@ -71,19 +77,19 @@ class MuxRealtimeViews extends HTMLElement {
         return;
       }
     }
-    if (value < 5000) {
-      console.warn('Error: Ping interval must be at or above 5000 (5 seconds).  Setting to 5 seconds.');
-      this.#pinginterval = 5000;
+    if (value < 5) {
+      console.warn('Error: Ping interval must be at or above 5 seconds. Setting to 5 seconds.');
+      this.#refresh = 5;
       this.stopUpdating();
-      this.startUpdating();  
+      this.startUpdating();
       return;
     }
-    this.#pinginterval = value;
+    this.#refresh = value;
     this.stopUpdating();
     this.startUpdating();
   }
-  get pinginterval() {
-    return this.#pinginterval;
+  get refresh() {
+    return this.#refresh;
   }
 
   // Misc
@@ -227,7 +233,7 @@ class MuxRealtimeViews extends HTMLElement {
       if (!this.shadowRoot) return;
 
       this.#token        = this.getAttribute('token') || '';
-      this.#pinginterval = Number(this.getAttribute('pinginterval')) || 5000;
+      this.#refresh      = Number(this.getAttribute('refresh')) || 5;
       this.#showViews    = this.hasAttribute('views');
       this.#showViewers  = this.hasAttribute('viewers');
       this.#viewsName    = this.getAttribute('views-label') || 'Watching';
@@ -235,12 +241,15 @@ class MuxRealtimeViews extends HTMLElement {
 
       if (!this.#token) {
         console.warn('Please include a token');
-        this.event('error', 'Please include a token', {});
+        this.#event('error', 'Please include a token', {});
         return;
       }
 
       const views = this.#divs.root.querySelector('[data-views]');
-      if (this.#showViews && !views) {
+      if (views) {
+        views.parentElement.remove();
+      }
+      if (this.#showViews) {
           const divViews = document.createElement('div');
           divViews.classList.add('view_container');
           divViews.innerHTML = `<span class="data" data-views>0</span><span class="title">${this.#viewsName}</span>`;
@@ -251,8 +260,12 @@ class MuxRealtimeViews extends HTMLElement {
         views.parentElement.remove();
       }
 
+
       const viewers = this.#divs.root.querySelector('[data-viewers]');
-      if (this.#showViewers && !viewers) {
+      if (viewers) {
+        viewers.parentElement.remove();
+      }
+      if (this.#showViewers) {
           const divViewers = document.createElement('div');
           divViewers.classList.add('view_container');
           divViewers.innerHTML = `<span class="data" data-viewers>0</span><span class="title">${this.#viewersName}</span>`;
@@ -289,17 +302,17 @@ class MuxRealtimeViews extends HTMLElement {
       const { isExpired, timeString } = this.checkJWTExpiration(this.#token);
 
       if (isExpired) {
-        this.event('expired', `JWT Token expired ${timeString}. Please provide a new token.`, {});
+        this.#event('expired', `JWT Token expired ${timeString}. Please provide a new token.`, {});
         this.stopUpdating();
         return;
       }
 
       const url = this.getURL(this.#token);
       const data = await this.getData(url);
-      if (!data || 'error' in data) this.event('error', data.error.messages[0], data);
+      if (!data || 'error' in data) this.#event('error', data.error.messages[0], data);
 
       this.#viewsdata = data;
-      this.event('update', 'Data Updated', this.#viewsdata);
+      this.#event('update', 'Data Updated', this.#viewsdata);
       this.#errorCount = 0;
       this.#lastUpdate.seconds = 0;
 
@@ -313,6 +326,7 @@ class MuxRealtimeViews extends HTMLElement {
       if (this.#slots.views)   this.updateDiv(views, viewsPrev, this.#slots.views)
       if (this.#slots.viewers) this.updateDiv(viewers, viewersPrev, this.#slots.viewers)
 
+      return this.#viewsdata;
   }
 
   updateDiv(current, old, div) {
@@ -324,11 +338,11 @@ class MuxRealtimeViews extends HTMLElement {
 
       if (current > old) {
         div.classList.add('increase');
-        this.event('increase', 'Increase', {previous: old, current: current, data: this.#viewsdata.data})
+        this.#event('increase', 'Increase', {previous: old, current: current, data: this.#viewsdata.data})
       }
       if (current < old) {
         div.classList.add('decrease');
-        this.event('decrease', 'Decrease', {previous: old, current: current, data: this.#viewsdata.data})
+        this.#event('decrease', 'Decrease', {previous: old, current: current, data: this.#viewsdata.data})
       }
 
       div.addEventListener('animationend', () => {
@@ -347,13 +361,13 @@ class MuxRealtimeViews extends HTMLElement {
         if (response.ok) {
           return response.json();
         } else {
-          this.event('error', 'Unable to get Data.', response);
+          this.#event('error', 'Unable to get Data.', response);
           this.#errorCount++;
           return;
         }
       })
       .catch(error => {
-        this.event('error', 'Unable to get Data.', error);
+        this.#event('error', 'Unable to get Data.', error);
         this.#errorCount++;
         return;
       });
@@ -366,7 +380,7 @@ class MuxRealtimeViews extends HTMLElement {
 
   startUpdating() {
     this.getRealTimeViews();
-    this.#intervals.realtime = setInterval(() => this.getRealTimeViews(), this.#pinginterval);
+    this.#intervals.realtime = setInterval(() => this.getRealTimeViews(), this.#refresh * 1000);
     this.clock();
     this.#intervals.clock = setInterval(() => this.clock(), 1000);
   }
@@ -376,7 +390,7 @@ class MuxRealtimeViews extends HTMLElement {
     let now = new Date();
 
     let offset = now.setSeconds(now.getSeconds() - this.#lastUpdate.seconds);
-    this.#lastUpdate.relative = this.getRelativeTimeDistance(offset) || '';
+    this.#lastUpdate.relative = this.#getRelativeTimeDistance(offset) || '';
 
     const { timeString, expiration } = this.checkJWTExpiration(this.#token);
     this.#tokenExpiration.relative = timeString || '';
@@ -396,7 +410,7 @@ class MuxRealtimeViews extends HTMLElement {
   checkJWTExpiration(token) {
     const jwt = this.parseJwt(token);
     const expiration = new Date(0).setUTCSeconds(jwt.exp);
-    const timeString = this.getRelativeTimeDistance(expiration);
+    const timeString = this.#getRelativeTimeDistance(expiration);
     const isExpired = expiration < new Date();
     return { isExpired, timeString, expiration };
   }
@@ -416,7 +430,7 @@ class MuxRealtimeViews extends HTMLElement {
     return JSON.parse(jsonPayload);
   }
 
-  getRelativeTimeDistance(d1, d2 = new Date()) {
+  #getRelativeTimeDistance(d1, d2 = new Date()) {
     const units = {
       year  : 24 * 60 * 60 * 1000 * 365,
       month : 24 * 60 * 60 * 1000 * 365/12,
@@ -432,7 +446,7 @@ class MuxRealtimeViews extends HTMLElement {
         return rtf.format(Math.round(elapsed/units[u]),u)
   }
 
-  event(name, details, object) {
+  #event(name, details, object) {
     this.dispatchEvent(new CustomEvent(name, {detail: {"message": details, "full": object}}));
   }
 
@@ -451,7 +465,7 @@ class MuxRealtimeViews extends HTMLElement {
       'token',
       'views',
       'viewers',
-      'pinginterval',
+      'refresh',
       'views-label',
       'viewers-label',
     ];
@@ -461,14 +475,6 @@ class MuxRealtimeViews extends HTMLElement {
       this.#token = newValue;
       this.#errorCount = 0;
     }
-
-    if (name === 'viewers') this.#showViewers = newValue;
-    if (name === 'views') this.#showViews = newValue;
-    if (name === 'pinginterval') this.#pinginterval = newValue;
-
-    if (name === 'views-label') this.#viewsName = newValue;
-    if (name === 'viewers-label') this.#viewersName = newValue;
-
     this.create();
   }
 
