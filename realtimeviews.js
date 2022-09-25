@@ -3,6 +3,7 @@ class MuxRealtimeViews extends HTMLElement {
   #tokenExpiration = {
     'seconds': 0,
     'relative': '',
+    'time': {},
   }
   #pinginterval = 5000;
   #showViews = true;
@@ -34,6 +35,7 @@ class MuxRealtimeViews extends HTMLElement {
     });
   }
 
+  // Token
   set token(value) {
     this.setAttribute('token', value)
   }
@@ -64,13 +66,16 @@ class MuxRealtimeViews extends HTMLElement {
   set pinginterval(value) {
     if (typeof(value) !== 'number') {
       value = Number(value);
-      if (value === isNaN()) {
+      if (isNaN(value)) {
         console.warn('Interval must be a number.')
         return;
       }
     }
     if (value < 5000) {
-      console.warn('Error: Ping interval must be at or above 5000 (5 seconds)');
+      console.warn('Error: Ping interval must be at or above 5000 (5 seconds).  Setting to 5 seconds.');
+      this.#pinginterval = 5000;
+      this.stopUpdating();
+      this.startUpdating();  
       return;
     }
     this.#pinginterval = value;
@@ -230,7 +235,7 @@ class MuxRealtimeViews extends HTMLElement {
 
       if (!this.#token) {
         console.warn('Please include a token');
-        this.event('error', 'Please include a token');
+        this.event('error', 'Please include a token', {});
         return;
       }
 
@@ -284,7 +289,7 @@ class MuxRealtimeViews extends HTMLElement {
       const { isExpired, timeString } = this.checkJWTExpiration(this.#token);
 
       if (isExpired) {
-        this.event('expired', `JWT Token expired ${timeString}. Please provide a new token.`);
+        this.event('expired', `JWT Token expired ${timeString}. Please provide a new token.`, {});
         this.stopUpdating();
         return;
       }
@@ -294,7 +299,7 @@ class MuxRealtimeViews extends HTMLElement {
       if (!data || 'error' in data) this.event('error', data.error.messages[0], data);
 
       this.#viewsdata = data;
-      this.event('update', this.#viewsdata);
+      this.event('update', 'Data Updated', this.#viewsdata);
       this.#errorCount = 0;
       this.#lastUpdate.seconds = 0;
 
@@ -337,23 +342,21 @@ class MuxRealtimeViews extends HTMLElement {
 
   async getData(link) {
     if (!link) return;
-    const res = await fetch(link)
+    return await fetch(link)
       .then(response => {
         if (response.ok) {
-          return response
+          return response.json();
         } else {
           this.event('error', 'Unable to get Data.', response);
           this.#errorCount++;
+          return;
         }
       })
       .catch(error => {
         this.event('error', 'Unable to get Data.', error);
         this.#errorCount++;
-        return false;
+        return;
       });
-    if (res) {
-      return await res.json();
-    }
   }
 
   stopUpdating() {
@@ -373,10 +376,10 @@ class MuxRealtimeViews extends HTMLElement {
     let now = new Date();
 
     let offset = now.setSeconds(now.getSeconds() - this.#lastUpdate.seconds);
-    this.#lastUpdate.relative = this.getRelativeTimeDistance(offset);
+    this.#lastUpdate.relative = this.getRelativeTimeDistance(offset) || '';
 
     const { timeString, expiration } = this.checkJWTExpiration(this.#token);
-    this.#tokenExpiration.relative = timeString;
+    this.#tokenExpiration.relative = timeString || '';
     this.#tokenExpiration.time = new Date(expiration);
     this.#tokenExpiration.seconds = Math.round((new Date(expiration) - new Date()) / 1000);
   }
