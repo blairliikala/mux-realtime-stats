@@ -27,11 +27,11 @@ export class MuxRealtimeViews extends HTMLElement {
     super();
 
     window.addEventListener("offline", () => {
-      this.stopUpdating();
+      this.stop();
     });
 
     window.addEventListener("online", () => {
-      this.startUpdating();
+      this.start();
     });
   }
 
@@ -80,13 +80,13 @@ export class MuxRealtimeViews extends HTMLElement {
     if (value < 5) {
       console.warn('Error: Ping interval must be at or above 5 seconds. Setting to 5 seconds.');
       this.#refresh = 5;
-      this.stopUpdating();
-      this.startUpdating();
+      this.stop();
+      this.start();
       return;
     }
     this.#refresh = value;
-    this.stopUpdating();
-    this.startUpdating();
+    this.stop();
+    this.start();
   }
   get refresh() {
     return this.#refresh;
@@ -284,7 +284,7 @@ export class MuxRealtimeViews extends HTMLElement {
         this.#slots.viewers = this.querySelector('[data-viewers]');
       }
 
-      this.startUpdating();
+      this.start();
   }
 
   async getRealTimeViews() {
@@ -303,7 +303,7 @@ export class MuxRealtimeViews extends HTMLElement {
 
       if (isExpired) {
         this.#event('expired', `JWT Token expired ${timeString}. Please provide a new token.`, {});
-        this.stopUpdating();
+        this.stop();
         return;
       }
 
@@ -373,16 +373,18 @@ export class MuxRealtimeViews extends HTMLElement {
       });
   }
 
-  stopUpdating() {
+  stop() {
     clearInterval(this.#intervals.realtime);
     clearInterval(this.#intervals.clock);
+    return 'Refresh Intervals Off.';
   }
 
-  startUpdating() {
+  start() {
     this.getRealTimeViews();
     this.#intervals.realtime = setInterval(() => this.getRealTimeViews(), this.#refresh * 1000);
     this.clock();
     this.#intervals.clock = setInterval(() => this.clock(), 1000);
+    return 'Refresh Intervals On.';
   }
 
   clock() {
@@ -458,7 +460,7 @@ export class MuxRealtimeViews extends HTMLElement {
     this.init();
   }
   disconnectedCallback() {
-    this.stopUpdating();
+    this.stop();
   }
   static get observedAttributes () {
     return [

@@ -16,7 +16,7 @@ Helper to display realtime views for assets and live streams using the Mux API.
 
 ```html
 <mux-realtime-views
-  token="${real_time_views}"
+  token="{token}"
   views
   viewers
   viewers-label="Custom Viewers Title"
@@ -35,15 +35,6 @@ Helper to display realtime views for assets and live streams using the Mux API.
 | viewer-label | Label for Viewers, replaced "viewers" | Viewers |
 | refresh | How often to check for view data in miliseconds.  Min of 5 seconds. | 5000 |
 
-## Additional Parameters
-
-| Name | Description | Default |
-| - | - | - |
-| data | (Read-only Object) The current raw response from mux.com | |
-| errorcount | (Read-only Number) Get the number of fetching errors. Reset after a successful fetch | |
-| lastUpdate | (Read-only Object) Contains the `seconds` and `relative` time since the last update | |
-| tokenTimeleft | (Read-only Object) Contains the `seconds` `relative` and `date` time left before the token expires and a new token is required for getting updates. | |
-
 ## Customize using Slots
 
 To style and customize the component, switch to using slots like the example below.  Start by creating an element like a `div` or `section` with the parameter `slot="views"`.  Somewhere inside the slot, include an element with the `data-views` parameter.  This will be what updates when view counts update.
@@ -54,8 +45,10 @@ To style and customize the component, switch to using slots like the example bel
       color: blue;
   }
 </style>
+<mux-realtime-views token="{token}">
 <div slot="views"><span data-views class="my_views">0</span> Watching</div>
 <div slot="viewers"><span data-viewers>0</span> viewers</div>
+</mux-realtime-views>
 ```
 
 ## Events
@@ -67,3 +60,19 @@ To style and customize the component, switch to using slots like the example bel
 | decrease | When a view or viewer decreases from the previous value. |
 | error | A fetch of new data has run into a problem.  Contains the status code, text response, optionally an object of more info. |
 | expired | The access `token` has expired, and checking for view updates has stopped.  Provide a new `token` to continue checking for updates. |
+
+## Methods
+
+| Name | Description |
+| - | - |
+| start() | Start checking for updates. |
+| stop() | Stop checking for updates. |
+
+## Properties
+
+| Name | Description | Default |
+| - | - | - |
+| data | (Read-only Object) The current raw response from mux.com | |
+| errorcount | (Read-only Number) Get the number of fetching errors. Reset after a successful fetch | |
+| lastUpdate | (Read-only Object) Contains the `seconds` and `relative` time since the last update | |
+| tokenTimeleft | (Read-only Object) Contains the `seconds` `relative` and `date` time left before the token expires and a new token is required for getting updates. | |
