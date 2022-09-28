@@ -25,11 +25,9 @@ export class MuxRealtimeViews extends HTMLElement {
 
   constructor() {
     super();
-
     window.addEventListener("offline", () => {
       this.stop();
     });
-
     window.addEventListener("online", () => {
       this.start();
     });
@@ -130,8 +128,14 @@ export class MuxRealtimeViews extends HTMLElement {
         }
         .data {
           font-size: 1.5rem;
+          display: flex;
+          justify-content: space-evenly;
+          align-items: stretch;
+          align-content: center;
         }
-
+        .spacer {
+          min-width: 1em;
+        }
         .pulseonce {
           box-shadow: 0 0 0 0 rgba(0, 0, 0, 1);
           transform: scale(1);
@@ -144,31 +148,17 @@ export class MuxRealtimeViews extends HTMLElement {
           animation-delay: 1s;
         }
         .increase {
-          color:green;
+          color: green;
         }
         .decrease {
-          color:red;
+          color: red;
         }
-
-        .increase:before, .decrease:before {
-          margin:0;
-          padding:0;
-          position:absolute;
-          left:.3rem;
-          top:.9rem;
+        .fadeOut {
           animation: fadeOut ease 1s;
           animation-iteration-count: 1;
           animation-fill-mode: forwards;
           animation-delay: 1s;
         }
-        .increase:before {
-          content: '+';
-        }
-        .decrease:before {
-          content: '-';
-          /*transform: rotate(180deg);*/
-        }
-
         @keyframes pulse-black {
           0% {
             transform: scale(0.95);
@@ -252,7 +242,13 @@ export class MuxRealtimeViews extends HTMLElement {
       if (this.#showViews) {
           const divViews = document.createElement('div');
           divViews.classList.add('view_container');
-          divViews.innerHTML = `<span class="data" data-views>0</span><span class="title">${this.#viewsName}</span>`;
+          divViews.innerHTML = `
+            <span class="data" data-views>
+              <span class="spacer" data-icon></span>
+              <span data-amount>0</span>
+              <span class="spacer"></span>
+            </span>
+            <span class="title">${this.#viewsName}</span>`;
           this.#divs.root.appendChild(divViews);
           this.#divs.views = this.shadowRoot.querySelector('[data-views]');
       }
@@ -268,7 +264,13 @@ export class MuxRealtimeViews extends HTMLElement {
       if (this.#showViewers) {
           const divViewers = document.createElement('div');
           divViewers.classList.add('view_container');
-          divViewers.innerHTML = `<span class="data" data-viewers>0</span><span class="title">${this.#viewersName}</span>`;
+          divViewers.innerHTML = `
+            <span class="data" data-viewers>
+              <span class="spacer" data-icon></span>
+              <span data-amount>0</span>
+              <span class="spacer"></span>
+            </span>
+            <span class="title">${this.#viewersName}</span>`;          
           this.#divs.root.appendChild(divViewers);
           this.#divs.viewers = this.shadowRoot.querySelector('[data-viewers]');
       }
@@ -332,26 +334,35 @@ export class MuxRealtimeViews extends HTMLElement {
   updateDiv(current, old, div) {
     if (!div) return;
 
+    const icon   = div.querySelector('[data-icon]');
+    const amount = div.querySelector('[data-amount]');
+
     if (old != current) {
 
       div.classList.add('pulseonce');
 
       if (current > old) {
         div.classList.add('increase');
+        icon.innerHTML = "+";
+        icon.classList.add('fadeOut');
         this.#event('increase', 'Increase', {previous: old, current: current, data: this.#viewsdata.data})
       }
       if (current < old) {
         div.classList.add('decrease');
+        icon.innerHTML = "-";
+        icon.classList.add('fadeOut');
         this.#event('decrease', 'Decrease', {previous: old, current: current, data: this.#viewsdata.data})
       }
 
       div.addEventListener('animationend', () => {
-        div.classList.remove('pulseonce')
-        div.classList.remove('increase')
-        div.classList.remove('decrease')
+        div.classList.remove('pulseonce');
+        div.classList.remove('increase');
+        div.classList.remove('decrease');
+        icon.classList.remove('fadeOut');
+        icon.innerHTML = "";
       });
     }
-    div.innerHTML = current;
+    amount.innerHTML = current;
   }
 
   async getData(link) {
