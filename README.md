@@ -46,8 +46,16 @@ To style and customize the component, switch to using slots like the example bel
   }
 </style>
 <mux-realtime-views token="{token}">
-<div slot="views"><span data-views class="my_views">0</span> Watching</div>
-<div slot="viewers"><span data-viewers>0</span> viewers</div>
+<div slot="views">
+    <span class="my_views" data-views>
+      <span data-amount>0</span>
+    </span> watching</div>
+
+<div slot="viewers">
+  <span class="my_views" data-viewers>
+    <span data-amount>0</span>
+  </span> viewers
+</div>
 </mux-realtime-views>
 ```
 
