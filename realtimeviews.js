@@ -278,7 +278,6 @@ export class MuxRealtimeViews extends HTMLElement {
         viewers.parentElement.remove();
       }
 
-
       if (this.shadowRoot.querySelector('slot[name=views]')) {
         this.#slots.views = this.querySelector('[data-views]');
       }
@@ -343,14 +342,14 @@ export class MuxRealtimeViews extends HTMLElement {
 
       if (current > old) {
         div.classList.add('increase');
-        icon.innerHTML = "+";
-        icon.classList.add('fadeOut');
+        if (icon) icon.innerHTML = "+";
+        if (icon) icon.classList.add('fadeOut');
         this.#event('increase', 'Increase', {previous: old, current: current, data: this.#viewsdata.data})
       }
       if (current < old) {
         div.classList.add('decrease');
-        icon.innerHTML = "-";
-        icon.classList.add('fadeOut');
+        if (icon) icon.innerHTML = "-";
+        if (icon) icon.classList.add('fadeOut');
         this.#event('decrease', 'Decrease', {previous: old, current: current, data: this.#viewsdata.data})
       }
 
@@ -358,11 +357,11 @@ export class MuxRealtimeViews extends HTMLElement {
         div.classList.remove('pulseonce');
         div.classList.remove('increase');
         div.classList.remove('decrease');
-        icon.classList.remove('fadeOut');
-        icon.innerHTML = "";
+        if (icon) icon.classList.remove('fadeOut');
+        if (icon) icon.innerHTML = "";
       });
     }
-    amount.innerHTML = current;
+    if (amount) amount.innerHTML = current;
   }
 
   async getData(link) {
