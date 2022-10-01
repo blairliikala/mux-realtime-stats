@@ -2,7 +2,7 @@
 
 Helper to display realtime views for assets and live streams using the Mux API.
 
-This is a select portion of software used in the copyrighted ExpressionEngine MuxEE addon posted here for demonstration purposes.
+This is a select portion of software used in the commercial ExpressionEngine MuxEE addon posted here for demonstration purposes.
 
 ## Usage
 
