@@ -31,6 +31,13 @@ export class MuxRealtimeViews extends HTMLElement {
     window.addEventListener("online", () => {
       this.start();
     });
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        this.start();
+      } else {
+        this.stop();
+      }      
+    });
   }
 
   // Token
