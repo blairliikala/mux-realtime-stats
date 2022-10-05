@@ -35,7 +35,7 @@ This is a select portion of software used in the commercial ExpressionEngine Mux
 | viewers | Show how many viewers with premade styles and animations. | undefined |
 | views-label | Label for Views, replaced "views" | Watching |
 | viewer-label | Label for Viewers, replaced "viewers" | Viewers |
-| refresh | How often to check for view data in miliseconds.  Min of 5 seconds. | 5000 |
+| refresh | How often to check for view data in miliseconds.  Min of 5 seconds. | 5 |
 
 ## Customize using Slots
 
@@ -48,16 +48,16 @@ To style and customize the component, switch to using slots like the example bel
   }
 </style>
 <mux-realtime-views token="{token}">
-<div slot="views">
-    <span class="my_views" data-views>
-      <span data-amount>0</span>
-    </span> watching</div>
+  <div slot="views">
+      <span class="my_views" data-views>
+        <span data-amount>0</span>
+      </span> watching</div>
 
-<div slot="viewers">
-  <span class="my_views" data-viewers>
-    <span data-amount>0</span>
-  </span> viewers
-</div>
+  <div slot="viewers">
+    <span class="my_views" data-viewers>
+      <span data-amount>0</span>
+    </span> viewers
+  </div>
 </mux-realtime-views>
 ```
 
