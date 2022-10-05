@@ -42,22 +42,27 @@ This is a select portion of software used in the commercial ExpressionEngine Mux
 To style and customize the component, switch to using slots like the example below.  Start by creating an element like a `div` or `section` with the parameter `slot="views"`.  Somewhere inside the slot, include an element with the `data-views` parameter.  This will be what updates when view counts update.
 
 ```html
+<!-- Custom Styles -->
 <style>
   .my_views {
       color: blue;
   }
 </style>
+
 <mux-realtime-views token="{token}">
+  
   <div slot="views">
-      <span class="my_views" data-views>
-        <span data-amount>0</span>
-      </span> watching</div>
+    <span class="my_views" data-views>
+      <span data-amount>0</span> watching
+    </span>
+  </div>
 
   <div slot="viewers">
     <span class="my_views" data-viewers>
-      <span data-amount>0</span>
-    </span> viewers
+      <span data-amount>0</span> viewers
+    </span>
   </div>
+  
 </mux-realtime-views>
 ```
 
