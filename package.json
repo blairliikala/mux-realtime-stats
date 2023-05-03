@@ -1,0 +1,47 @@
+{
+  "name": "mux-realtime-views",
+  "description": "A simple component to check for realtime views from Mux Data.  Unofficial.",
+  "keywords": [
+    "video",
+    "streaming",
+    "component",
+    "events"
+  ],
+  "license": "MIT",
+  "author": "Blair Liikala",
+  "homepage": "https://github.com/blairliikala/mux-realtime-stats",
+  "repository": "github:blairliikala/ux-realtime-stats",
+  "version": "1.0.0",
+  "type": "module",
+  "module": "index.js",
+  "browser": "index.js",
+  "scripts": {
+    "build": "esbuild ./src/realtimeviews.js --bundle --minify --target=es2022 --format=esm --outfile=./dist/realtimeviews.min.js",
+    "start": "web-dev-server"
+  },
+  "devDependencies": {
+    "@custom-elements-manifest/analyzer": "^0.8.0",
+    "@esm-bundle/chai": "^4.3.0",
+    "@open-wc/eslint-config": "^10.0.0",
+    "@open-wc/testing": "^3.1.0",
+    "@web/dev-server": "^0.2.0",
+    "@web/test-runner": "^0.16.0",
+    "esbuild": "^0.17.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^8.3.0",
+    "prettier": "^2.4.1"
+  },
+  "unpkg": "./dist/realtimeviews.js",
+  "jsdelivr": "./dist/realtimeviews.js",
+  "customElements": "custom-elements.json",
+  "eslintConfig": {
+    "extends": [
+      "@open-wc",
+      "prettier"
+    ]
+  },
+  "prettier": {
+    "singleQuote": true,
+    "arrowParens": "avoid"
+  }
+}

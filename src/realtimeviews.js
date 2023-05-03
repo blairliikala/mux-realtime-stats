@@ -44,20 +44,28 @@ export class MuxRealtimeViews extends HTMLElement {
   set token(value) {
     this.setAttribute('token', value);
   }
+
   get token() {
     return this.#token;
   }
+
   get tokenExpiration() {
     return this.#tokenExpiration;
   }
 
   // Views
   set views(value) {
-    value ? this.setAttribute('views', 'true') : this.removeAttribute('views');
+    if (value) {
+      this.setAttribute('views', 'true');
+    } else {
+      this.removeAttribute('views');
+    }
   }
+
   get views() {
     return this.#viewsdata.data[0]?.views || 0;
   }
+
   set viewsLabel(value) {
     if (typeof (value) === 'string') this.setAttribute('views-label', value);
   }
@@ -66,9 +74,15 @@ export class MuxRealtimeViews extends HTMLElement {
   get viewers() {
     return this.#viewsdata.data[0]?.viewers || 0;
   }
+
   set viewers(value) {
-    value ? this.setAttribute('viewers', 'true') : this.removeAttribute('viewers');
+    if (value) {
+      this.setAttribute('viewers', 'true');
+    } else {
+      this.removeAttribute('viewers');
+    }
   }
+
   set viewersLabel(value) {
     if (typeof (value) === 'string') this.setAttribute('viewers-label', value);
   }
@@ -76,8 +90,8 @@ export class MuxRealtimeViews extends HTMLElement {
   // Ping
   set refresh(value) {
     if (typeof (value) !== 'number') {
-      value = Number(value);
-      if (isNaN(value)) {
+      const numvalue = Number(value);
+      if (Number.isNaN(numvalue)) {
         console.warn('Interval must be a number.');
         return;
       }
@@ -93,6 +107,7 @@ export class MuxRealtimeViews extends HTMLElement {
     this.stop();
     this.start();
   }
+
   get refresh() {
     return this.#refresh;
   }
@@ -101,9 +116,11 @@ export class MuxRealtimeViews extends HTMLElement {
   get data() {
     return this.#viewsdata.data[0] || null;
   }
+
   get errorcount() {
     return this.#errorCount;
   }
+
   get lastUpdate() {
     return this.#lastUpdate;
   }
@@ -295,7 +312,7 @@ export class MuxRealtimeViews extends HTMLElement {
   }
 
   async getRealTimeViews() {
-    const viewsdata_previous = { ...this.#viewsdata };
+    const viewsdataPrevious = { ...this.#viewsdata };
 
     if (this.#errorCount > 4) {
       if (this.#errorCount === 10) console.warn('Too many errors, stopping.');
@@ -332,8 +349,8 @@ export class MuxRealtimeViews extends HTMLElement {
 
     const views = (this.#viewsdata.data) ? this.#viewsdata.data[0].views : 0;
     const viewers = (this.#viewsdata.data) ? this.#viewsdata.data[0].viewers : 0;
-    const viewsPrev = (viewsdata_previous.data) ? viewsdata_previous.data[0].views : 0;
-    const viewersPrev = (viewsdata_previous.data) ? viewsdata_previous.data[0].viewers : 0;
+    const viewsPrev = (viewsdataPrevious.data) ? viewsdataPrevious.data[0].views : 0;
+    const viewersPrev = (viewsdataPrevious.data) ? viewsdataPrevious.data[0].viewers : 0;
 
     if (this.#divs.views) this.updateDiv(views, viewsPrev, this.#divs.views);
     if (this.#divs.viewers) this.updateDiv(viewers, viewersPrev, this.#divs.viewers);
@@ -343,8 +360,6 @@ export class MuxRealtimeViews extends HTMLElement {
     if (this.#refreshOn) {
       setTimeout(() => this.getRealTimeViews(), this.#refresh * 1000);
     }
-
-    return this.#viewsdata;
   }
 
   updateDiv(current, old, div) {
@@ -354,20 +369,19 @@ export class MuxRealtimeViews extends HTMLElement {
     const amount = div.querySelector('[data-amount]');
 
     if (old != current) {
-
       div.classList.add('pulseonce');
 
       if (current > old) {
         div.classList.add('increase');
         if (icon) icon.innerHTML = '+';
         if (icon) icon.classList.add('fadeOut');
-        this.#event('increase', 'Increase', { previous: old, current: current, data: this.#viewsdata.data });
+        this.#event('increase', 'Increase', { previous: old, current, data: this.#viewsdata.data });
       }
       if (current < old) {
         div.classList.add('decrease');
         if (icon) icon.innerHTML = '-';
         if (icon) icon.classList.add('fadeOut');
-        this.#event('decrease', 'Decrease', { previous: old, current: current, data: this.#viewsdata.data });
+        this.#event('decrease', 'Decrease', { previous: old, current, data: this.#viewsdata.data });
       }
 
       div.addEventListener('animationend', () => {
@@ -431,15 +445,6 @@ export class MuxRealtimeViews extends HTMLElement {
     }
   }
 
-  isURL(string) {
-    try {
-      return Boolean(new URL(string));
-    }
-    catch (e) {
-      return false;
-    }
-  }
-
   checkJWTExpiration(TOKEN) {
     const jwt = this.parseJwt(TOKEN);
     if (!jwt) {
@@ -486,7 +491,7 @@ export class MuxRealtimeViews extends HTMLElement {
   }
 
   #event(name, details, object) {
-    this.dispatchEvent(new CustomEvent(name, { detail: { 'message': details, 'full': object } }));
+    this.dispatchEvent(new CustomEvent(name, { detail: { message: details, full: object } }));
   }
 
   getURL() {
@@ -496,27 +501,32 @@ export class MuxRealtimeViews extends HTMLElement {
   #puralCheck(name, count) {
     const shouldBePlura = count > 1 || true;
     const lastCharacterIsPlural = (name.slice(-1) === 's' || name.slice(-1) === 'S');
+    let newName = name;
     if (shouldBePlura) {
       // Add S.
       if (!lastCharacterIsPlural) {
-        name = `${name}s`;
+        newName = `${name}s`;
       }
     } else {
       // Remove if there.
       if (lastCharacterIsPlural) {
-        name = name.substring(0, name.length - 1);
+        newName = name.substring(0, name.length - 1);
+      } else {
+        newName = '';
       }
+      return newName;
     }
-
-    return name;
+    return newName;
   }
 
   connectedCallback() {
     this.init();
   }
+
   disconnectedCallback() {
     this.stop();
   }
+
   static get observedAttributes() {
     return [
       'token',
@@ -527,6 +537,7 @@ export class MuxRealtimeViews extends HTMLElement {
       'viewers-label',
     ];
   }
+
   attributeChangedCallback(name, oldValue, newValue) {
     if (name === 'token') {
       this.#token = newValue;
@@ -534,6 +545,5 @@ export class MuxRealtimeViews extends HTMLElement {
     }
     this.create();
   }
-
 }
 customElements.define('mux-realtime-views', MuxRealtimeViews);

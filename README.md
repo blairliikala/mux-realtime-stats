@@ -8,7 +8,7 @@ This is a select portion of software used in the commercial ExpressionEngine Mux
 
 ```html
 <mux-realtime-views
-  token="${real_time_views}"
+  token="xxxxxx"
   views
   viewers
 ></mux-realtime-views>
@@ -18,7 +18,7 @@ This is a select portion of software used in the commercial ExpressionEngine Mux
 
 ```html
 <mux-realtime-views
-  token="{token}"
+  token="xxxxxx"
   views
   viewers
   viewers-label="Custom Viewers Title"
@@ -70,24 +70,24 @@ To style and customize the component, switch to using slots like the example bel
 
 | Name | Description |
 | - | - |
-| update | Fired every ping interval and contains the response from Mux. |
-| increase | When a view or viewer increases from the previous value. |
-| decrease | When a view or viewer decreases from the previous value. |
-| error | A fetch of new data has run into a problem.  Contains the status code, text response, optionally an object of more info. |
-| expired | The access `token` has expired, and checking for view updates has stopped.  Provide a new `token` to continue checking for updates. |
+| `update` | Fired every ping interval and contains the response from Mux. |
+| `increase` | When a view or viewer increases from the previous value. |
+| `decrease` | When a view or viewer decreases from the previous value. |
+| `error` | A fetch of new data has run into a problem.  Contains the status code, text response, optionally an object of more info. |
+| `expired` | The access `token` has expired, and checking for view updates has stopped.  Useful to then provide a new `token` and continue checking for updates. |
 
 ## Methods
 
 | Name | Description |
 | - | - |
-| start() | Start checking for updates. |
-| stop() | Stop checking for updates. |
+| `start()` | Start checking for updates. |
+| `stop()` | Stop checking for updates. |
 
 ## Properties
 
 | Name | Description | Default |
 | - | - | - |
-| data | (Read-only Object) The current raw response from mux.com | |
-| errorcount | (Read-only Number) Get the number of fetching errors. Reset after a successful fetch | |
-| lastUpdate | (Read-only Object) Contains the `seconds` and `relative` time since the last update | |
-| tokenTimeleft | (Read-only Object) Contains the `seconds` `relative` and `date` time left before the token expires and a new token is required for getting updates. | |
+| `data` | (Read-only Object) The current raw response from mux.com | |
+| `errorcount` | (Read-only Number) Get the number of fetching errors. Reset after a successful fetch | |
+| `lastUpdate` | (Read-only Object) Contains the `seconds` and `relative` time since the last update | |
+| `tokenTimeleft` | (Read-only Object) Contains the `seconds` `relative` and `date` time left before the token expires and a new token is required for getting updates. | |
