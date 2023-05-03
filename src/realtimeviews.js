@@ -40,7 +40,6 @@ export class MuxRealtimeViews extends HTMLElement {
     });
   }
 
-  // Token
   set token(value) {
     this.setAttribute('token', value);
   }
@@ -53,7 +52,6 @@ export class MuxRealtimeViews extends HTMLElement {
     return this.#tokenExpiration;
   }
 
-  // Views
   set views(value) {
     if (value) {
       this.setAttribute('views', 'true');
@@ -70,7 +68,6 @@ export class MuxRealtimeViews extends HTMLElement {
     if (typeof (value) === 'string') this.setAttribute('views-label', value);
   }
 
-  // Viewers
   get viewers() {
     return this.#viewsdata.data[0]?.viewers || 0;
   }
@@ -87,7 +84,6 @@ export class MuxRealtimeViews extends HTMLElement {
     if (typeof (value) === 'string') this.setAttribute('viewers-label', value);
   }
 
-  // Ping
   set refresh(value) {
     if (typeof (value) !== 'number') {
       const numvalue = Number(value);

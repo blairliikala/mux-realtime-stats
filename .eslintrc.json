@@ -12,7 +12,7 @@
   "rules": {
     "arrow-parens": ["error", "as-needed"],
     "lines-between-class-members": ["error", "always", { "exceptAfterSingleLine": true }],
-    "no-param-reassign": ["error", { "props": true, "ignorePropertyModificationsFor": ["cue"] }],
+    "no-param-reassign": ["error", { "props": true }],
     "grouped-accessor-pairs": ["error", "anyOrder"],
     "quotes": ["error", "single"]
   },
