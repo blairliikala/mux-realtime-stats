@@ -4,7 +4,7 @@ export class MuxRealtimeViews extends HTMLElement {
     'seconds': 0,
     'relative': '',
     'time': {},
-  }
+  };
   #refresh = 5;
   #showViews = true;
   #showViewers = true;
@@ -12,6 +12,7 @@ export class MuxRealtimeViews extends HTMLElement {
   #viewersName = 'Viewers';
   #viewsdata = {}; // Hold the Mux Realtime response.
   #errorCount = 0; // Count errors.
+  #refreshOn = true;
 
   // Count up since last check.
   #lastUpdate = {
@@ -19,16 +20,15 @@ export class MuxRealtimeViews extends HTMLElement {
     'relative': '',
   };
 
-  #intervals = {};
   #divs = {};
   #slots = {};
 
   constructor() {
     super();
-    window.addEventListener("offline", () => {
+    window.addEventListener('offline', () => {
       this.stop();
     });
-    window.addEventListener("online", () => {
+    window.addEventListener('online', () => {
       this.start();
     });
     window.addEventListener('visibilitychange', () => {
@@ -36,13 +36,13 @@ export class MuxRealtimeViews extends HTMLElement {
         this.start();
       } else {
         this.stop();
-      }      
+      }
     });
   }
 
   // Token
   set token(value) {
-    this.setAttribute('token', value)
+    this.setAttribute('token', value);
   }
   get token() {
     return this.#token;
@@ -59,7 +59,7 @@ export class MuxRealtimeViews extends HTMLElement {
     return this.#viewsdata.data[0]?.views || 0;
   }
   set viewsLabel(value) {
-    if (typeof(value) === 'string') this.setAttribute('views-label', value);
+    if (typeof (value) === 'string') this.setAttribute('views-label', value);
   }
 
   // Viewers
@@ -70,15 +70,15 @@ export class MuxRealtimeViews extends HTMLElement {
     value ? this.setAttribute('viewers', 'true') : this.removeAttribute('viewers');
   }
   set viewersLabel(value) {
-    if (typeof(value) === 'string') this.setAttribute('viewers-label', value);
+    if (typeof (value) === 'string') this.setAttribute('viewers-label', value);
   }
 
   // Ping
   set refresh(value) {
-    if (typeof(value) !== 'number') {
+    if (typeof (value) !== 'number') {
       value = Number(value);
       if (isNaN(value)) {
-        console.warn('Interval must be a number.')
+        console.warn('Interval must be a number.');
         return;
       }
     }
@@ -202,145 +202,155 @@ export class MuxRealtimeViews extends HTMLElement {
 
     template.innerHTML = `
       ${this.css}
-      <section class="realtime_container">
-        <slot name="views"></slot>
-        <slot name="viewers"></slot>
+      <section class='realtime_container'>
+        <slot name='views'></slot>
+        <slot name='viewers'></slot>
       </section>
     `;
 
     const html = template.content.cloneNode(true);
-    const shadow = this.attachShadow({ mode: 'open' })
+    const shadow = this.attachShadow({ mode: 'open' });
     shadow.appendChild(html);
 
     this.#divs = {
-      'root'        : this.shadowRoot?.querySelector('.realtime_container'),
-      'views'       : this.shadowRoot?.querySelector('[data-views]'),
-      'viewers'     : this.shadowRoot?.querySelector('[data-viewers]'),
-      'elapsed'     : this.shadowRoot?.querySelector('[data-elapsed]'),
-    }
+      'root': this.shadowRoot?.querySelector('.realtime_container'),
+      'views': this.shadowRoot?.querySelector('[data-views]'),
+      'viewers': this.shadowRoot?.querySelector('[data-viewers]'),
+      'elapsed': this.shadowRoot?.querySelector('[data-elapsed]'),
+    };
     this.#slots = {
-      'viewsSlot'   : this.shadowRoot?.querySelector('slot[name=views]'),
-      'viewersSlot' : this.shadowRoot?.querySelector('slot[name=viewers]'),
-    }
+      'viewsSlot': this.shadowRoot?.querySelector('slot[name=views]'),
+      'viewersSlot': this.shadowRoot?.querySelector('slot[name=viewers]'),
+    };
 
     this.create();
   }
 
   create() {
-      if (!this.shadowRoot) return;
+    if (!this.shadowRoot) return;
 
-      this.#token        = this.getAttribute('token') || '';
-      this.#refresh      = Number(this.getAttribute('refresh')) || 5;
-      this.#showViews    = this.hasAttribute('views');
-      this.#showViewers  = this.hasAttribute('viewers');
-      this.#viewsName    = this.getAttribute('views-label') || 'Watching';
-      this.#viewersName  = this.getAttribute('viewers-label') || 'Viewers';
+    this.#token = this.getAttribute('token') || '';
+    this.#refresh = Number(this.getAttribute('refresh')) || 5;
+    this.#showViews = this.hasAttribute('views');
+    this.#showViewers = this.hasAttribute('viewers');
+    this.#viewsName = this.getAttribute('views-label') || 'Watching';
+    this.#viewersName = this.getAttribute('viewers-label') || 'Viewers';
 
-      if (!this.#token) {
-        console.warn('Please include a token');
-        this.#event('error', 'Please include a token', {});
-        return;
-      }
+    if (!this.#token) {
+      console.warn('Please include a token');
+      this.#event('error', 'Please include a token', {});
+      return;
+    }
 
-      const views = this.#divs.root.querySelector('[data-views]');
-      if (views) {
-        views.parentElement.remove();
-      }
-      if (this.#showViews) {
-          const divViews = document.createElement('div');
-          divViews.classList.add('view_container');
-          divViews.innerHTML = `
-            <span class="data" data-views>
-              <span class="spacer" data-icon></span>
+    const views = this.#divs.root.querySelector('[data-views]');
+    if (views) {
+      views.parentElement.remove();
+    }
+    if (this.#showViews) {
+      const divViews = document.createElement('div');
+      divViews.classList.add('view_container');
+      divViews.innerHTML = `
+            <span class='data' data-views>
+              <span class='spacer' data-icon></span>
               <span data-amount>0</span>
-              <span class="spacer"></span>
+              <span class='spacer'></span>
             </span>
-            <span class="title">${this.#viewsName}</span>`;
-          this.#divs.root.appendChild(divViews);
-          this.#divs.views = this.shadowRoot.querySelector('[data-views]');
-      }
-      if (!this.#showViews && views) {
-        views.parentElement.remove();
-      }
+            <span class='title'>${this.#viewsName}</span>`;
+      this.#divs.root.appendChild(divViews);
+      this.#divs.views = this.shadowRoot.querySelector('[data-views]');
+    }
+    if (!this.#showViews && views) {
+      views.parentElement.remove();
+    }
 
-
-      const viewers = this.#divs.root.querySelector('[data-viewers]');
-      if (viewers) {
-        viewers.parentElement.remove();
-      }
-      if (this.#showViewers) {
-          const divViewers = document.createElement('div');
-          divViewers.classList.add('view_container');
-          divViewers.innerHTML = `
-            <span class="data" data-viewers>
-              <span class="spacer" data-icon></span>
+    const viewers = this.#divs.root.querySelector('[data-viewers]');
+    if (viewers) {
+      viewers.parentElement.remove();
+    }
+    if (this.#showViewers) {
+      const divViewers = document.createElement('div');
+      divViewers.classList.add('view_container');
+      divViewers.innerHTML = `
+            <span class='data' data-viewers>
+              <span class='spacer' data-icon></span>
               <span data-amount>0</span>
-              <span class="spacer"></span>
+              <span class='spacer'></span>
             </span>
-            <span class="title">${this.#viewersName}</span>`;          
-          this.#divs.root.appendChild(divViewers);
-          this.#divs.viewers = this.shadowRoot.querySelector('[data-viewers]');
-      }
-      if (!this.#showViewers && viewers) {
-        viewers.parentElement.remove();
-      }
+            <span class='title'>${this.#viewersName}</span>`;
+      this.#divs.root.appendChild(divViewers);
+      this.#divs.viewers = this.shadowRoot.querySelector('[data-viewers]');
+    }
+    if (!this.#showViewers && viewers) {
+      viewers.parentElement.remove();
+    }
 
-      if (this.shadowRoot.querySelector('slot[name=views]')) {
-        this.#slots.views = this.querySelector('[data-views]');
-      }
-      if (this.shadowRoot.querySelector('slot[name=viewers]')) {
-        this.#slots.viewers = this.querySelector('[data-viewers]');
-      }
+    if (this.shadowRoot.querySelector('slot[name=views]')) {
+      this.#slots.views = this.querySelector('[data-views]');
+    }
+    if (this.shadowRoot.querySelector('slot[name=viewers]')) {
+      this.#slots.viewers = this.querySelector('[data-viewers]');
+    }
 
-      this.start();
+    this.start();
   }
 
   async getRealTimeViews() {
-      const viewsdata_previous = {...this.#viewsdata};
+    const viewsdata_previous = { ...this.#viewsdata };
 
-      if (this.#errorCount > 4) {
-        if (this.#errorCount === 10) console.warn('Too many errors, stopping.');
-        return;
-      }
+    if (this.#errorCount > 4) {
+      if (this.#errorCount === 10) console.warn('Too many errors, stopping.');
+      return;
+    }
 
-      if ('online' in navigator && !navigator.onLine) {
-        return;
-      }
+    if ('online' in navigator && !navigator.onLine) {
+      return;
+    }
 
-      const { isExpired, timeString } = this.checkJWTExpiration(this.#token);
+    const { isExpired, timeString } = this.checkJWTExpiration(this.#token);
 
-      if (isExpired) {
-        this.#event('expired', `JWT Token expired ${timeString}. Please provide a new token.`, {});
-        this.stop();
-        return;
-      }
+    if (isExpired) {
+      this.#event('expired', `JWT Token expired ${timeString}. Please provide a new token.`, {});
+      this.stop();
+      return;
+    }
 
-      const url = this.getURL(this.#token);
-      const data = await this.getData(url);
-      if (!data || 'error' in data) this.#event('error', data.error.messages[0], data);
+    const url = this.getURL(this.#token);
+    const data = await this.getData(url);
+    if (!data) {
+      this.#event('error', 'Unknown error getting data.', data);
+      return;
+    }
+    if ('error' in data) {
+      this.#event('error', data.error.messages[0], data);
+      return;
+    }
 
-      this.#viewsdata = data;
-      this.#event('update', 'Data Updated', this.#viewsdata);
-      this.#errorCount = 0;
-      this.#lastUpdate.seconds = 0;
+    this.#viewsdata = data;
+    this.#event('update', 'Data Updated', this.#viewsdata);
+    this.#errorCount = 0;
+    this.#lastUpdate.seconds = 0;
 
-      let views       = (this.#viewsdata.data) ? this.#viewsdata.data[0].views : 0;
-      let viewers     = (this.#viewsdata.data) ? this.#viewsdata.data[0].viewers : 0;
-      let viewsPrev   = (viewsdata_previous.data) ? viewsdata_previous.data[0].views : 0;
-      let viewersPrev = (viewsdata_previous.data) ? viewsdata_previous.data[0].viewers : 0;
+    const views = (this.#viewsdata.data) ? this.#viewsdata.data[0].views : 0;
+    const viewers = (this.#viewsdata.data) ? this.#viewsdata.data[0].viewers : 0;
+    const viewsPrev = (viewsdata_previous.data) ? viewsdata_previous.data[0].views : 0;
+    const viewersPrev = (viewsdata_previous.data) ? viewsdata_previous.data[0].viewers : 0;
 
-      if (this.#divs.views)    this.updateDiv(views, viewsPrev, this.#divs.views)
-      if (this.#divs.viewers)  this.updateDiv(viewers, viewersPrev, this.#divs.viewers)
-      if (this.#slots.views)   this.updateDiv(views, viewsPrev, this.#slots.views)
-      if (this.#slots.viewers) this.updateDiv(viewers, viewersPrev, this.#slots.viewers)
+    if (this.#divs.views) this.updateDiv(views, viewsPrev, this.#divs.views);
+    if (this.#divs.viewers) this.updateDiv(viewers, viewersPrev, this.#divs.viewers);
+    if (this.#slots.views) this.updateDiv(views, viewsPrev, this.#slots.views);
+    if (this.#slots.viewers) this.updateDiv(viewers, viewersPrev, this.#slots.viewers);
 
-      return this.#viewsdata;
+    if (this.#refreshOn) {
+      setTimeout(() => this.getRealTimeViews(), this.#refresh * 1000);
+    }
+
+    return this.#viewsdata;
   }
 
   updateDiv(current, old, div) {
     if (!div) return;
 
-    const icon   = div.querySelector('[data-icon]');
+    const icon = div.querySelector('[data-icon]');
     const amount = div.querySelector('[data-amount]');
 
     if (old != current) {
@@ -349,15 +359,15 @@ export class MuxRealtimeViews extends HTMLElement {
 
       if (current > old) {
         div.classList.add('increase');
-        if (icon) icon.innerHTML = "+";
+        if (icon) icon.innerHTML = '+';
         if (icon) icon.classList.add('fadeOut');
-        this.#event('increase', 'Increase', {previous: old, current: current, data: this.#viewsdata.data})
+        this.#event('increase', 'Increase', { previous: old, current: current, data: this.#viewsdata.data });
       }
       if (current < old) {
         div.classList.add('decrease');
-        if (icon) icon.innerHTML = "-";
+        if (icon) icon.innerHTML = '-';
         if (icon) icon.classList.add('fadeOut');
-        this.#event('decrease', 'Decrease', {previous: old, current: current, data: this.#viewsdata.data})
+        this.#event('decrease', 'Decrease', { previous: old, current: current, data: this.#viewsdata.data });
       }
 
       div.addEventListener('animationend', () => {
@@ -365,7 +375,7 @@ export class MuxRealtimeViews extends HTMLElement {
         div.classList.remove('increase');
         div.classList.remove('decrease');
         if (icon) icon.classList.remove('fadeOut');
-        if (icon) icon.innerHTML = "";
+        if (icon) icon.innerHTML = '';
       });
     }
     if (amount) amount.innerHTML = current;
@@ -391,59 +401,69 @@ export class MuxRealtimeViews extends HTMLElement {
   }
 
   stop() {
-    clearInterval(this.#intervals.realtime);
-    clearInterval(this.#intervals.clock);
+    this.#refreshOn = false;
     return 'Refresh Intervals Off.';
   }
 
   start() {
+    this.#refreshOn = true;
     this.getRealTimeViews();
-    this.#intervals.realtime = setInterval(() => this.getRealTimeViews(), this.#refresh * 1000);
     this.clock();
-    this.#intervals.clock = setInterval(() => this.clock(), 1000);
     return 'Refresh Intervals On.';
   }
 
   clock() {
     this.#lastUpdate.seconds++;
-    let now = new Date();
+    const now = new Date();
 
-    let offset = now.setSeconds(now.getSeconds() - this.#lastUpdate.seconds);
+    const offset = now.setSeconds(now.getSeconds() - this.#lastUpdate.seconds);
     this.#lastUpdate.relative = this.#getRelativeTimeDistance(offset) || '';
 
-    const { timeString, expiration } = this.checkJWTExpiration(this.#token);
-    this.#tokenExpiration.relative = timeString || '';
-    this.#tokenExpiration.time = new Date(expiration);
-    this.#tokenExpiration.seconds = Math.round((new Date(expiration) - new Date()) / 1000);
+    if (this.#token) {
+      const { timeString, expiration } = this.checkJWTExpiration(this.#token);
+      this.#tokenExpiration.relative = timeString || '';
+      this.#tokenExpiration.time = new Date(expiration);
+      this.#tokenExpiration.seconds = Math.round((new Date(expiration) - new Date()) / 1000);
+    }
+
+    if (this.#refreshOn) {
+      setTimeout(() => this.clock(), 1000);
+    }
   }
 
   isURL(string) {
     try {
       return Boolean(new URL(string));
     }
-    catch(e){
+    catch (e) {
       return false;
     }
   }
 
-  checkJWTExpiration(token) {
-    const jwt = this.parseJwt(token);
+  checkJWTExpiration(TOKEN) {
+    const jwt = this.parseJwt(TOKEN);
+    if (!jwt) {
+      throw new Error('JWT Token could not be parsed.');
+    }
+    if (!('exp' in jwt)) {
+      throw new Error('No exp parameter in JWT.');
+    }
     const expiration = new Date(0).setUTCSeconds(jwt.exp);
     const timeString = this.#getRelativeTimeDistance(expiration);
     const isExpired = expiration < new Date();
     return { isExpired, timeString, expiration };
   }
 
-  parseJwt (TOKEN) {
+  parseJwt(TOKEN) {
     let jsonPayload = '';
     try {
       const base64Url = TOKEN.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       }).join(''));
     } catch (error) {
-      console.warn(`Token may not be a real token`, TOKEN);
+      console.warn('Token may not be a real token', TOKEN);
       return;
     }
     return JSON.parse(jsonPayload);
@@ -451,26 +471,44 @@ export class MuxRealtimeViews extends HTMLElement {
 
   #getRelativeTimeDistance(d1, d2 = new Date()) {
     const units = {
-      year  : 24 * 60 * 60 * 1000 * 365,
-      month : 24 * 60 * 60 * 1000 * 365/12,
-      day   : 24 * 60 * 60 * 1000,
-      hour  : 60 * 60 * 1000,
+      year: 24 * 60 * 60 * 1000 * 365,
+      month: 24 * 60 * 60 * 1000 * 365 / 12,
+      day: 24 * 60 * 60 * 1000,
+      hour: 60 * 60 * 1000,
       minute: 60 * 1000,
       second: 1000
-    }
-    const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
+    };
+    const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
     const elapsed = d1 - d2;
     for (var u in units)
       if (Math.abs(elapsed) > units[u] || u == 'second')
-        return rtf.format(Math.round(elapsed/units[u]),u)
+        return rtf.format(Math.round(elapsed / units[u]), u);
   }
 
   #event(name, details, object) {
-    this.dispatchEvent(new CustomEvent(name, {detail: {"message": details, "full": object}}));
+    this.dispatchEvent(new CustomEvent(name, { detail: { 'message': details, 'full': object } }));
   }
 
-  getURL(token) {
+  getURL() {
     return `https://stats.mux.com/counts?token=${this.#token}`;
+  }
+
+  #puralCheck(name, count) {
+    const shouldBePlura = count > 1 || true;
+    const lastCharacterIsPlural = (name.slice(-1) === 's' || name.slice(-1) === 'S');
+    if (shouldBePlura) {
+      // Add S.
+      if (!lastCharacterIsPlural) {
+        name = `${name}s`;
+      }
+    } else {
+      // Remove if there.
+      if (lastCharacterIsPlural) {
+        name = name.substring(0, name.length - 1);
+      }
+    }
+
+    return name;
   }
 
   connectedCallback() {
@@ -479,7 +517,7 @@ export class MuxRealtimeViews extends HTMLElement {
   disconnectedCallback() {
     this.stop();
   }
-  static get observedAttributes () {
+  static get observedAttributes() {
     return [
       'token',
       'views',
@@ -489,7 +527,7 @@ export class MuxRealtimeViews extends HTMLElement {
       'viewers-label',
     ];
   }
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback(name, oldValue, newValue) {
     if (name === 'token') {
       this.#token = newValue;
       this.#errorCount = 0;
